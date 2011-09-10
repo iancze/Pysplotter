@@ -21,6 +21,7 @@ import pyfits
 class Spectrum(object):
     def __init__(self,filename):
     '''Takes in the full path to a filename and then opens it, depending on whether it is a fits file, or something else.'''
+    #This change was made in the master branch.
 
     self.start_pix_kw = "CRVAL1"
     disp_kws = ["CDELT1","CD1_1"]
