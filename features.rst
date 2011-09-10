@@ -18,6 +18,14 @@ Create routines for viewing these.
 
 Be able to switch from normal to log space easily
 
+
+View Options
+==================================================
+
+Turn on/off Grid
+Switch from Linear to Log space
+Switch from wavelength to velocity space (also select from common lines to make zero velocity).
+
 Import/Export
 ==================================================
 

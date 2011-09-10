@@ -24,6 +24,7 @@ class Pysplotter(GuiMixin, GuiMakerWindowMenu):
 
 
         self.spec_list = []
+        self.gridOn = False
         GuiMakerWindowMenu.__init__(self,parent)
         
 
@@ -34,7 +35,11 @@ class Pysplotter(GuiMixin, GuiMakerWindowMenu):
                 ('Quit', 0, self.quit)]),
         ('Edit', 0,
             [('Cut', 0, lambda: 0),
-             ('Paste', 0, lambda: 0)]) ]
+             ('Paste', 0, lambda: 0)]),
+        ('View', 0,
+            [('Toggle Grid', 0, self.toggleGrid),
+             ('Toggle linear/log', 0, lambda: 0),
+             ('Velocity Space', 0, lambda: 0)])]
         self.toolBar = [('Quit', self.quit, {'side':tk.LEFT}),('Update', self.update, {'side':tk.LEFT})]#,('New', self.askNewWord, {'side':tk.LEFT}),('Apply', self.updateDB, {'side':tk.LEFT}),('Delete', self.deleteWord, {'side':tk.LEFT}),('Search',self.searchClicked, {'side':tk.LEFT})]
 
     def quit(self):
@@ -72,10 +77,17 @@ class Pysplotter(GuiMixin, GuiMakerWindowMenu):
 
     def loadSpec(self):
         spec_file_name = self.selectOpenFile()
-        recent = spectrum.createSpectrumFromFile(spec_file_name)
+        recent = spectrum.Spectrum(spec_file_name)
         self.spec_list.append(recent)
-        self.ax.plot(recent.wl,recent.fl)
+        self.ax.plot(recent.wls[0],recent.fls[0])
         self.canvas.show()
+
+    def toggleGrid(self):
+        if self.gridOn:
+            self.ax.grid()
+        else:
+            self.ax.grid(which="both")
+            self.canvas.show()
 
 
 if __name__ == "__main__":
