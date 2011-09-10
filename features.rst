@@ -18,7 +18,12 @@ Create routines for viewing these.
 
 Be able to switch from normal to log space easily
 
+Import/Export
+==================================================
+
 Can read spectra in a variety of formats
+        This needs some more work to be robust.
+
 Can export spectra in a variety of formats (mostly ASCII right now)
 
 Keep track of recent spectra viewed

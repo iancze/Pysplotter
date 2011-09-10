@@ -64,7 +64,7 @@ class Spectrum(object):
         #Keep the data around as well, to make sure it is accessible.
         self.data = data
         self.hdr = hdr
-        self.z = 0.0
+        #self.z = z
 
 
 
