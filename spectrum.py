@@ -28,6 +28,7 @@ class Spectrum(object):
         self.naxis1_kw = "NAXIS1"
         self.naxis2_kw = "NAXIS2"
         self.naxis3_kw = "NAXIS3"
+        self.object_kw = "OBJECT"
 
         data,hdr = pyfits.getdata(filename,header=True)
 
@@ -48,13 +49,14 @@ class Spectrum(object):
 
         self.naxis = int(hdr[self.naxis_kw])
         if  self.naxis > 1:
-            num_spec = int(hdr[self.naxis3_kw])
-            for i in range(num_spec):
+            self.num_spec = int(hdr[self.naxis3_kw])
+            for i in range(self.num_spec):
                 wl = np.arange(naxis1) * disp + start_pix
                 fl = data[i][0] 
                 self.wls.append(wl)
                 self.fls.append(fl)
         else:
+            self.num_spec = 1
             self.wls = [np.arange(naxis1) * disp + start_pix]
             self.fls = [data]
 
@@ -65,6 +67,9 @@ class Spectrum(object):
         self.data = data
         self.hdr = hdr
         self.z = 0.0
+        if hdr.has_key(self.object_kw):
+            #It's important to sanitize the name of periods, due to Tk class issues
+            self.name = hdr[self.object_kw]
 
 
 

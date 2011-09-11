@@ -16,6 +16,7 @@ class View(object):
         self.cl.hlist.add("CL1.Item1", text="subitem1")
         self.cl.hlist.add("CL2", text="checklist2")
         self.cl.hlist.add("CL2.Item1", text="subitem1")
+        self.cl.hlist.add_child("CL2",text="Subitem2")
         self.cl.hlist.add("CL3", text="Another Item", underline=5)
         #Need to set the "on" or "off" so that they can be checked, otherwise "none" is chosen.
         self.cl.setstatus("CL2", "off")

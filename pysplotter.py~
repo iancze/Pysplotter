@@ -8,6 +8,8 @@ import numpy as np
 import tkinter as tk
 import sys, os
 import collections
+from tkinter import tix
+
 
 sys.path.insert(0, os.path.abspath('/home/ian/Grad/Programming/Python'))
 from guimixin import GuiMixin,ScrolledList,Form
@@ -23,7 +25,7 @@ class Pysplotter(GuiMixin, GuiMakerWindowMenu):
     def __init__(self,parent=None):
 
 
-        self.spectrum_stack = []
+        self.spec_dic = {}
         self.gridOn = False
         self.logOn = False
         GuiMakerWindowMenu.__init__(self,parent)
@@ -70,6 +72,7 @@ class Pysplotter(GuiMixin, GuiMakerWindowMenu):
         self.canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
           
         self.pack(side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
+        self.spec_browser = SpecBrowser()
 
     def update(self):
         print("Updated")
@@ -82,9 +85,12 @@ class Pysplotter(GuiMixin, GuiMakerWindowMenu):
     def loadSpec(self):
         spec_file_name = self.selectOpenFile()
         recent = spectrum.Spectrum(spec_file_name)
-        self.spec_list.append(recent)
+        #Insert code here to change name of spectrum
+        recent.name = self.oneWordPopup("Name of Spectrum",recent.name)
+        self.spec_dic[recent.name] = recent
         self.ax.plot(recent.wls[0],recent.fls[0],ls="steps-mid")
         self.canvas.show()
+        self.spec_browser.add_spec(recent)
 
     def toggleGrid(self):
         if self.gridOn:
@@ -108,12 +114,43 @@ class Pysplotter(GuiMixin, GuiMakerWindowMenu):
 
     def showAvailSpec(self):
         '''Pop-up the spectrum selector'''
-        pass
+        print(self.spec_browser.returnSelected())
+
+
+class SpecBrowser(object):
+    def __init__(self):
+        self.window = tix.Toplevel()
+        self.cl = tix.CheckList(self.window, browsecmd=self.selectItem)
+        self.cl.pack()
+        #Somehow just map the quit button to hide this dialog, and then get view=>showAvail to redisplay this.
+
+    def selectItem(self,item):
+        print(item, self.cl.getstatus(item))
+        
+    def add_spec(self,spectrum):
+        '''Takes in a spectrum object and adds it to the list box'''
+        self.cl.hlist.add(spectrum.name, text=spectrum.name)
+        self.cl.setstatus(spectrum.name, "on")
+        #If the list is a multispec, then add all of the other items as subitems
+        if len(spectrum.wls) > 1:
+            for i in range(spectrum.num_spec):
+                sub_tag = spectrum.name + ".%s" % i
+                self.cl.hlist.add(sub_tag, text="%s" % i)
+                if i==0:
+                    self.cl.setstatus(sub_tag, "on")
+                else:
+                    self.cl.setstatus(sub_tag, "off")
+
+    def returnSelected(self):
+        return self.cl.getselection()
+
+
+
 
 
 if __name__ == "__main__":
     '''If file run as top-level, begin constructing the GUI'''
-    root = tk.Tk()
+    root = tix.Tk()
     Pysplotter(parent=root)
     root.title("Pysplotter by Ian Czekala")
     root.mainloop()
