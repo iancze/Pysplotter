@@ -29,6 +29,8 @@ class Spectrum(object):
         self.naxis2_kw = "NAXIS2"
         self.naxis3_kw = "NAXIS3"
         self.object_kw = "OBJECT"
+        self.multiplicative_offset = 1.0
+        self.additive_offset = 0.0
 
         data,hdr = pyfits.getdata(filename,header=True)
 

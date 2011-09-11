@@ -28,6 +28,10 @@ Switch from wavelength to velocity space (also select from common lines to make 
 
 Select which spectra are visible on the main plot screen. This will be accomplished through the Tix checkList extension.
 
+spectrum.multiplicative_offset and spectrum.additive_offset will be used to scale spectrum so that they appear in the same window.
+
+The tix.CheckList will be very helpful for displaying certain spectral lines, when the time comes. Perfect utility for browsing them.
+
 
 Import/Export
 ==================================================
