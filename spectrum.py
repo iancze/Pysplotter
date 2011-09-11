@@ -46,7 +46,8 @@ class Spectrum(object):
                 self.disp_kw = i
                 break
 
-        if int(hdr[self.naxis_kw]) > 1:
+        self.naxis = int(hdr[self.naxis_kw])
+        if  self.naxis > 1:
             num_spec = int(hdr[self.naxis3_kw])
             for i in range(num_spec):
                 wl = np.arange(naxis1) * disp + start_pix
@@ -56,7 +57,6 @@ class Spectrum(object):
         else:
             self.wls = [np.arange(naxis1) * disp + start_pix]
             self.fls = [data]
-            
 
         print(data.shape)
         #data.shape = naxis1

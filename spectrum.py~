@@ -20,33 +20,6 @@ import pyfits
 
 class Spectrum(object):
     def __init__(self,filename):
-<<<<<<< HEAD
-    '''Takes in the full path to a filename and then opens it, depending on whether it is a fits file, or something else.'''
-    #This change was made in the master branch.
-
-    self.start_pix_kw = "CRVAL1"
-    disp_kws = ["CDELT1","CD1_1"]
-    self.naxis1_kw = "NAXIS1"
-
-    data,hdr = pyfits.getdata(filename,header=True)
-
-    #Ask which band you want to import
-
-    naxis1 = int(hdr[naxis1_kw])
-    start_pix = float(hdr[start_pix_kw])
-    #Iterate through the list of keywords, and tell me which is correct/doesn't raise an error.
-    for i in disp_kws:
-        if hdr.has_key(i):
-            disp = float(hdr[i])
-            print("Using %s as key: %s" % (i,disp))
-            self.disp_kw = i
-            break
-
-    print(data.shape)
-    #data.shape = naxis1
-    wl = np.arange(naxis1) * disp + start_pix
-    fl = data 
-=======
         '''Takes in the full path to a filename and then opens it, depending on whether it is a fits file, or something else. The *Spectrum* object is the fundamental object which all methods in this class will interact.'''
 
         self.start_pix_kw = "CRVAL1"
@@ -83,8 +56,6 @@ class Spectrum(object):
         else:
             self.wls = [np.arange(naxis1) * disp + start_pix]
             self.fls = [data]
->>>>>>> spectrum
-            
 
         print(data.shape)
         #data.shape = naxis1

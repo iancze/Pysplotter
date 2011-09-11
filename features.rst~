@@ -24,7 +24,7 @@ View Options
 
 Turn on/off Grid
 Switch from Linear to Log space
-Switch from wavelength to velocity space
+Switch from wavelength to velocity space (also select from common lines to make zero velocity).
 
 Import/Export
 ==================================================

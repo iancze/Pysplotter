@@ -26,6 +26,9 @@ Turn on/off Grid
 Switch from Linear to Log space
 Switch from wavelength to velocity space (also select from common lines to make zero velocity).
 
+Select which spectra are visible on the main plot screen. This will be accomplished through the Tix checkList extension.
+
+
 Import/Export
 ==================================================
 
