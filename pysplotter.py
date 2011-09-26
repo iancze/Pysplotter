@@ -11,7 +11,6 @@ import collections
 from tkinter import tix
 
 
-sys.path.insert(0, os.path.abspath('/home/ian/Grad/Programming/Python'))
 from guimixin import GuiMixin,ScrolledList,Form
 from guimaker import GuiMakerWindowMenu
 

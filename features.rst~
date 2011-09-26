@@ -8,6 +8,8 @@ Line Fitting
 Gaussians, Lorentzians, Voight profiles
 Multiple components
 
+have an easily accesible section in the program where you can insert your own functions which to fit to the lines. The user just edits the code.
+
 Having a good line database 
 That user can add lines ad hoc
 Spectrum remembers which lines have been labelled
@@ -30,7 +32,7 @@ Select which spectra are visible on the main plot screen. This will be accomplis
 
 spectrum.multiplicative_offset and spectrum.additive_offset will be used to scale spectrum so that they appear in the same window.
 
-The tix.CheckList will be very helpful for displaying certain spectral lines, when the time comes.
+The tix.CheckList will be very helpful for displaying certain spectral lines, when the time comes. Perfect utility for browsing them.
 
 
 Import/Export

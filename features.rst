@@ -5,8 +5,9 @@ Features to come
 
 Line Fitting
 
-Gaussians, Lorentzians, Voight profiles
-Multiple components
+
+
+have an easily accesible section in the program where you can insert your own functions which to fit to the lines. The user just edits the code.
 
 Having a good line database 
 That user can add lines ad hoc
