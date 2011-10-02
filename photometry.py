@@ -277,7 +277,9 @@ def test_planck():
 		loglog(xs,y1)
 		loglog(xs,y2)
 		show()
-
+	
+		
+#Date algorithims
 				
 if __name__ == "__main__":
 #		print("B flux",JC_to_Jy(18.5,"B"))
