@@ -74,20 +74,26 @@ class Window_base(Frame):
     pass
 
 
-class ScrolledList(Frame):
-    def __init__(self, options, parent=None, **listkwargs):
-        Frame.__init__(self,parent)
-        self.pack(expand=YES,fill=BOTH)
+class ScrolledList(object):
+    def __init__(self, options, parent=None, sort=False, **listkwargs):
+        self.parent = parent
+        self.sort = sort
+        if self.parent == False:
+            self.window = Toplevel()
+        else:
+            self.window = Frame(self,parent)
+            self.pack(expand=YES,fill=BOTH)
+            
         self.makeWidgets(options,**listkwargs)
 
     def handleList(self,event):
         index = self.listbox.curselection()
         label = self.listbox.get(index)
-        self.runCommand(label)
+        return label
 
     def makeWidgets(self, options,**listkwargs):
-        sbar = Scrollbar(self)
-        self.listbox = Listbox(self, relief=SUNKEN, **listkwargs)
+        sbar = Scrollbar(self.window)
+        self.listbox = Listbox(self.window, relief=SUNKEN, **listkwargs)
         sbar.config(command=self.listbox.yview)
         self.listbox.config(yscrollcommand=sbar.set)
         sbar.pack(side=RIGHT, fill=Y)
@@ -95,18 +101,60 @@ class ScrolledList(Frame):
         self.loadList(options)
         self.listbox.bind('<Double-1>', self.handleList)
         self.listbox.bind('<Return>', self.handleList)
+        if self.parent == False:
+            self.submit = Button(self.window, text="Submit",command=self.onSubmit)
+            self.cancel = Button(self.window, text="Cancel",command=self.onCancel)
+            self.submit.pack(side=LEFT,expand=YES)
+            self.cancel.pack(side=RIGHT,expand=YES)
 
-    def runCommand(self, selection):
-        print('You selected:', selection)
+    def runCommand(self, label):
+        return label
 
     def deleteList(self):
         self.listbox.delete(0,END)
 
     def loadList(self,key_list):
-        key_list.sort()
+        if self.sort:
+            key_list.sort()
         for label in key_list:
             self.listbox.insert(END, label)
+            
+    def onCancel(self):
+        self.window.destroy()
 
+    def onSubmit(self):
+        self.handleList(None)
+
+#Might eventually think about combining ScrolledList and ScrolledListBrowser via setting the "parent=False" option
+
+class ScrolledListBrowser(object):
+    '''Based off of ScrolledList, but incorporates selection buttons and allows popup to be separate'''
+    def __init__(self,options,ordered=True):
+        self.window = tix.Toplevel()
+        self.sl = ScrolledList(options,parent=self.window)
+        self.sl.pack(side=TOP,expand=YES,fill=X)
+        self.submit = Button(self.window, text="Submit",command=self.onSubmit)
+        self.cancel = Button(self.window, text="Cancel",command=self.onCancel)
+        self.submit.pack(side=LEFT,expand=YES)
+        self.cancel.pack(side=RIGHT,expand=YES)
+        
+
+    def loadList(self,key_list):
+        if ordered:
+            for label in key_list:
+                self.sl.listbox.insert(END, label)
+        else:
+            key_list.sort()
+            self.sl.listbox.insert(END, label)
+                
+    def deleteList(self):
+        self.sl.listbox.delete(0,END)
+
+    def runCommand(self,*args):
+        self.sl.runCommand(*args)
+
+    
+            
 
 entrysize = 40
 class Form(Frame):

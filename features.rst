@@ -9,7 +9,12 @@ Line Fitting
 
 have an easily accesible section in the program where you can insert your own functions which to fit to the lines. The user just edits the code.
 
-Having a good line database 
+Having a good line database
+
+* Single lines
+* Multiplet viewer can add or subtract multiplet lines
+* Search within a wavelength range to see which lines might apply
+
 That user can add lines ad hoc
 Spectrum remembers which lines have been labelled
 Needs a continuum finding routine
