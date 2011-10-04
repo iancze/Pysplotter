@@ -7,7 +7,7 @@
 # docstrings can be called on any of the functions by doing Python's
 # "help(function)"
 
-from common_lines import wl
+
 from scipy.interpolate import interp1d
 from scipy.optimize import fmin
 from scipy.optimize import fminbound

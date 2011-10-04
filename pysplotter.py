@@ -18,13 +18,15 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,NavigationToolba
 from matplotlib.figure import Figure
 
 import spectrum
-
+import common_lines
 
 class Pysplotter(GuiMixin, GuiMakerWindowMenu):
     def __init__(self,parent=None):
 
 
         self.spec_dic = {}
+        self.single_lines = common_lines.single_lines
+        self.multiplets = common_lines.multiplets
         self.gridOn = False
         self.logOn = False
         GuiMakerWindowMenu.__init__(self,parent)
@@ -44,7 +46,8 @@ class Pysplotter(GuiMixin, GuiMakerWindowMenu):
              ('Velocity Space', 0, lambda: 0)]),
         ('Spectrum', 0,
             [('Load Spectrum', 0, self.loadSpec),
-             ('Show Available Spectra', 0, self.showAvailSpec)])]
+             ('Show Available Spectra', 0, self.showAvailSpec),
+             ('Select Line', 0, self.selectLine)])]
         self.toolBar = [('Quit', self.quit, {'side':tk.LEFT}),('Update', self.update, {'side':tk.LEFT})]#,('New', self.askNewWord, {'side':tk.LEFT}),('Apply', self.updateDB, {'side':tk.LEFT}),('Delete', self.deleteWord, {'side':tk.LEFT}),('Search',self.searchClicked, {'side':tk.LEFT})]
 
     def quit(self):
@@ -72,6 +75,7 @@ class Pysplotter(GuiMixin, GuiMakerWindowMenu):
           
         self.pack(side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
         self.spec_browser = SpecBrowser()
+        self.line_browser = LineLabeller(self.single_lines)
 
     def update(self):
         print("Updated")
@@ -115,12 +119,20 @@ class Pysplotter(GuiMixin, GuiMakerWindowMenu):
         '''Pop-up the spectrum selector'''
         print(self.spec_browser.returnSelected())
 
+    def selectLine(self):
+        line_selector = LineSelector(self.single_lines)
+        line = line_selector.line
+        return line
+        
+    def viewLineBrowser(self):
+        pass
+
 
 class SpecBrowser(object):
     def __init__(self):
         self.window = tix.Toplevel()
         self.cl = tix.CheckList(self.window, browsecmd=self.selectItem)
-        self.cl.pack()
+        self.cl.pack(side=tk.TOP, expand=tk.YES, fill=tk.BOTH)
         #Somehow just map the quit button to hide this dialog, and then get view=>showAvail to redisplay this.
 
     def selectItem(self,item):
@@ -144,6 +156,57 @@ class SpecBrowser(object):
         return self.cl.getselection()
 
 
+class LineSelector(ScrolledList):
+    '''This is called to interface anytime the wavelength of a certain line is needed'''
+    #Modal dialog created from Lutz pg 439
+    def __init__(self,single_lines):
+        self.single_lines = single_lines
+        ScrolledList.__init__(self,[],parent=False)
+        #Create list of keys with wl
+        wl_list = []
+        for i in self.single_lines.keys():
+            wl_list.append("%s: %.0f" % (i, self.single_lines[i]))
+        self.loadList(wl_list)
+        self.window.bind('<Return>', (lambda event: self.onSubmit()))
+        self.window.grab_set()
+        self.window.focus_set()
+        self.window.wait_window()
+
+    def onSubmit(self):
+        self.line = self.handleList(None)
+        self.window.destroy()
+        
+        
+class LineLabeller(object):
+    def __init__(self,single_lines):
+        # Pass single_lines by reference since it is mutable
+        self.single_lines = single_lines
+        self.window = tix.Toplevel()
+        self.cl = tix.CheckList(self.window, browsecmd=self.selectItem)
+        self.cl.pack(side=tk.TOP, expand=tk.YES, fill=tk.BOTH)
+        self.load_lines()
+        #Somehow just map the quit button to hide this dialog, and then get view=>showAvail to redisplay this.
+        
+    def selectItem(self,item):
+        print(item, self.cl.getstatus(item))
+
+    def load_lines(self):
+        for i in self.single_lines:
+            self.cl.hlist.add(i, text=i)
+            self.cl.setstatus(i, "off")
+        
+    def add_user_spec(self,line):
+        '''Pop up a form box for label and wavelength'''
+        pass
+
+
+    def returnSelected(self):
+        return self.cl.getselection()	
+
+
+class MultipletBrowser(object):
+    pass
+
 
 
 
@@ -151,5 +214,5 @@ if __name__ == "__main__":
     '''If file run as top-level, begin constructing the GUI'''
     root = tix.Tk()
     Pysplotter(parent=root)
-    root.title("Pysplotter by Ian Czekala")
+    root.title("Pysplotter")
     root.mainloop()
