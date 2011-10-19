@@ -13,6 +13,7 @@ Having a good line database
 
 * Single lines
 * Multiplet viewer can add or subtract multiplet lines
+* Search within a wavelength range to see which lines might apply
 
 That user can add lines ad hoc
 Spectrum remembers which lines have been labelled
