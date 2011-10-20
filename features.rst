@@ -2,6 +2,10 @@
 Features to come
 ==================================================
 
+Overall architecture:
+
+Now everything will be implemented using PyQt. Also, reduction scripts should be drawn from this package.
+
 
 Line Fitting
 
