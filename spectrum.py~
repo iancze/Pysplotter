@@ -7,7 +7,7 @@
 # docstrings can be called on any of the functions by doing Python's
 # "help(function)"
 
-from common_lines import wl
+
 from scipy.interpolate import interp1d
 from scipy.optimize import fmin
 from scipy.optimize import fminbound
@@ -15,7 +15,6 @@ from scipy.integrate import quad
 from scipy.integrate import simps
 from constants import *
 import numpy as np
-import photometry
 import pyfits
 
 class Spectrum(object):
@@ -216,6 +215,7 @@ def annotate_multiplet_l(name,lines,wavelength,ax,xs,ys,offset=5e-17,length=5e-1
         "connectionstyle":"bar,angle=180,fraction=-0.2"},size=10)
 
 def synthesize_photometric_point(filt, wl, fl):
+    import photometry
     '''Takes in a spectrum in [ang], and [erg/(s cm^2 ang)], and then returns Jy'''
     if filt in {"u","g","r","i","z"}:
         wl_key = "lam"
