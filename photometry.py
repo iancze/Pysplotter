@@ -41,7 +41,7 @@ filter_wheel =  {"U":3670, #Violet Light
 "z":9097} #Infrared Light
 
 #Load filter transmission/response curves (which?)
-base = "Filter_Data/"
+base = "/home/ian/Grad/Programming/Python/Pysplotter/Filter_Data/"
 #Load the SLOAN transmission curves
 u_trans = asciitable.read(base + "u'_transmission.dat")
 g_trans = asciitable.read(base + "g'_transmission.dat")

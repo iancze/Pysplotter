@@ -53,8 +53,6 @@ class Pysplotter(QMainWindow, ui_pysplotter.Ui_PysplotterDlg):
         print("Open File")
         
 
-
-
     #def loadSpec(self):
         #spec_file_name = self.selectOpenFile()
         #recent = spectrum.Spectrum(spec_file_name)
