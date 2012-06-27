@@ -8,79 +8,239 @@
 # "help(function)"
 
 
+import matplotlib
+matplotlib.use("Qt4Agg")
+import matplotlib.pyplot as plt
+
 from scipy.interpolate import interp1d
 from scipy.optimize import fmin
 from scipy.optimize import fminbound
+from scipy.optimize import leastsq
+from scipy.optimize import curve_fit
 from scipy.integrate import quad
 from scipy.integrate import simps
 from constants import *
 import numpy as np
 import pyfits
+import copy
+import functions
+import common_lines
+from target import Target
 
-class Spectrum(object):
-    def __init__(self,filename):
+
+class Spectrum(Target):
+    def __init__(self,filename,parent=None,date=None):
         '''Takes in the full path to a filename and then opens it, depending on whether it is a fits file, or something else. The *Spectrum* object is the fundamental object which all methods in this class will interact.'''
 
-        self.start_pix_kw = "CRVAL1"
-        disp_kws = ["CDELT1","CD1_1"]
-        self.naxis_kw = "NAXIS"
-        self.naxis1_kw = "NAXIS1"
-        self.naxis2_kw = "NAXIS2"
-        self.naxis3_kw = "NAXIS3"
-        self.object_kw = "OBJECT"
-        self.multiplicative_offset = 1.0
-        self.additive_offset = 0.0
+        self.parent = parent
+        self.date = date
 
-        data,hdr = pyfits.getdata(filename,header=True)
+            
+        if ".fits" in filename:
+            self.start_pix_kw = "CRVAL1"
+            disp_kws = ["CDELT1","CD1_1"]
+            self.naxis_kw = "NAXIS"
+            self.naxis1_kw = "NAXIS1"
+            self.naxis2_kw = "NAXIS2"
+            self.naxis3_kw = "NAXIS3"
+            self.object_kw = "OBJECT"
+            self.multiplicative_offset = 1.0
+            self.additive_offset = 0.0
 
-        #Make sure you import the spectra in an appropriate manner.
-        #List of wavelengths and fluxes available in the file. This will ALWAYS be a list, even of length 1.
-        self.wls = []
-        self.fls = []
+            data,hdr = pyfits.getdata(filename,header=True)
 
-        naxis1 = int(hdr[self.naxis1_kw])
-        start_pix = float(hdr[self.start_pix_kw])
-        #Iterate through the list of keywords, and tell me which is correct/doesn't raise an error.
-        for i in disp_kws:
-            if hdr.has_key(i):
-                disp = float(hdr[i])
-                print("Using %s as key: %s" % (i,disp))
-                self.disp_kw = i
-                break
+            #Make sure you import the spectra in an appropriate manner.
+            #List of wavelengths and fluxes available in the file. This will ALWAYS be a list, even of length 1.
+            self.wls = []
+            self.fls = []
 
-        self.naxis = int(hdr[self.naxis_kw])
-        if  self.naxis > 1:
-            self.num_spec = int(hdr[self.naxis3_kw])
-            for i in range(self.num_spec):
-                wl = np.arange(naxis1) * disp + start_pix
-                fl = data[i][0] 
-                self.wls.append(wl)
-                self.fls.append(fl)
-        else:
-            self.num_spec = 1
-            self.wls = [np.arange(naxis1) * disp + start_pix]
-            self.fls = [data]
+            naxis1 = int(hdr[self.naxis1_kw])
+            start_pix = float(hdr[self.start_pix_kw])
+            #Iterate through the list of keywords, and tell me which is correct/doesn't raise an error.
+            for i in disp_kws:
+                if hdr.has_key(i):
+                    disp = float(hdr[i])
+                    print("Using %s as key: %s" % (i,disp))
+                    self.disp_kw = i
+                    break
 
-        print(data.shape)
-        #data.shape = naxis1
-                
+            self.naxis = int(hdr[self.naxis_kw])
+            if  self.naxis > 1:
+                self.num_spec = int(hdr[self.naxis3_kw])
+                for i in range(self.num_spec):
+                    wl = np.arange(naxis1) * disp + start_pix
+                    fl = data[i][0]
+                    self.wls.append(wl)
+                    self.fls.append(fl)
+            else:
+                self.num_spec = 1
+                self.wls = [np.arange(naxis1) * disp + start_pix]
+                self.fls = [data]
+
+            print(data.shape)
+            #data.shape = naxis1
+
+            #Keep the header around as well, to make sure it is accessible.
+            self.hdr = hdr
+
+            if hdr.has_key(self.object_kw):
+                #It's important to sanitize the name of periods, due to Tk class issues
+                self.name = hdr[self.object_kw]
+
+        if (".flm" in filename) or (".asc" in filename) or (".dat" in filename):
+            data = np.loadtxt(filename)
+            wl = data[:,0]
+            fl = data[:,1]
+            self.wls = [wl]
+            #If flux is over 1e-3, or whatever, then scale it.
+            if np.max(fl) > 1e-8:
+                self.fls = [fl*1.e-15]
+            else:
+                self.fls = [fl]
+            
+            self.data = data
+            self.name = filename
+
+        #Make an original copy to keep to calculate new redshifts
+        self.wls0 = copy.deepcopy(self.wls)
+        self.fls0 = copy.deepcopy(self.fls)
+  
         #Keep the data around as well, to make sure it is accessible.
         self.data = data
-        self.hdr = hdr
-        self.z = 0.0
-        if hdr.has_key(self.object_kw):
-            #It's important to sanitize the name of periods, due to Tk class issues
-            self.name = hdr[self.object_kw]
+
+    def set_clip(self,wl_range):
+        '''Given a wavelength range as a list or tuple, clip the spectra to this range to remove unseemly noise'''
+        lower,upper = wl_range
+        for i in range(len(self.wls)):
+            inds = np.where((self.wls[i] > lower) & (self.wls[i] < upper))
+            self.wls[i] = self.wls[i][inds]
+            self.fls[i] = self.fls[i][inds]
+            
+    def set_date(self,date):
+        self.date = date
+
+    def set_parent(self,parent):
+        self.parent = parent
+        
+    def update_z(self):
+        '''Redshifts the wavelengths a redshift, z.'''
+        self.wls = [un_shift(i,self.parent.z) for i in self.wls0]
+        print("Updating wavelengths to new z")
+
+    def bin_spectrum(self):
+        pass
+        
+    def fit_gaussian(self, bkg0, bkg1, guess=[],x0_range=50.):
+        '''Fits a Guassian profile on top of a background. User specifies background selection points, and a line is found.'''
+        #bkg1, bk2 are the (x,y) locations of the backgroud on either side of the line.
+        #Check to see if we have a noise spectrum. If not, will need to use an estimate of the background instead.
+        #Might also want to split this fitter up to include the background separately.
+        sigma = np.std(self.fls[0][:30])
+        print("sigma",sigma)
+        m = (bkg1[1] - bkg0[1])/(bkg1[0] - bkg0[0])
+        b = bkg0[1] - m * bkg0[0]
+        #print("Slope",m,"Intercept",b)
+        fit_func = lambda p: (self.fls[0] - functions.gaussian_bkg(self.wls[0],np.concatenate((p[0:3],[m,b]))))/sigma
+        solution = leastsq(fit_func,guess,full_output=True)
+        #if solution[1] not in [1,2,3,4]:
+        #    raise Warning
+        #else:
+        #print(solution)
+        params = solution[0]
+        cov = solution[1]
+        print(params)
+        print(cov)
+        print(np.sqrt(cov[0][0]),np.sqrt(cov[1][1]),np.sqrt(cov[2][2]))
+        params = np.concatenate((params,[m,b]))
+        print(params)
+        return params
+
+    def velocity_center(self, line_wl, vrange=4000.):
+        '''Return wavelengths shifted relative to line'''
+        #Find the relevant indexs to use
+        lower = shift_vel(line_wl, -1. * vrange)
+        upper = shift_vel(line_wl, vrange)
+        #print("Test",vel_ref(7671.,7774.))
+        #print(lower,upper)
+        indexes = np.where((self.wls[0] > lower) & (self.wls[0] < upper))
+        wls = [vel_ref(i[indexes], line_wl) for i in self.wls]
+        fls = [i[indexes] for i in self.fls]
+        return [wls,fls]
+
+    def eq_w_numerical(self,bkg0,bkg1,output_plot=True):
+        '''Given the continuum level as a line between two points, computes the equivalent width by adding up the flux.'''
+        m = (bkg1[1] - bkg0[1])/(bkg1[0] - bkg0[0])
+        b = bkg0[1] - m * bkg0[0]
+        ind = np.where((self.wls[0] > bkg0[0]) & (self.wls[0] < bkg1[0]))
+        print("Wavelengths used", self.wls[0][ind])
+        height =  0.5 * (bkg0[1] + bkg1[1])
+        width = self.wls[0][ind][-1] - self.wls[0][ind][0]
+        total_flux = np.trapz(self.fls[0][ind],self.wls[0][ind])
+        continuum_flux = height * width
+        print("Total Flux", total_flux)
+        print("Continuum Flux", continuum_flux)
+        print("Total - Continuum", total_flux - continuum_flux)
+        line = lambda x: functions.line(x,[m,b])
+        if output_plot:
+            plt.plot(self.wls[0][ind],self.fls[0][ind])
+            plt.plot(self.wls[0][ind],line(self.wls[0][ind]),ls="-")
+            plt.show()
+        return (total_flux - continuum_flux)/ height
 
 
+    def write_spectrum_png(self,fname=None):
+        fig = plt.figure(figsize=(8,6))
+        ax = fig.add_subplot(111)
+        ax.plot(self.wls[0],self.fls[0])
+        ax.set_xlabel(r"Rest Wavelength $\AA$")
+        ax.set_ylabel(r"Flux $10^{15} \left [ \frac{{\rm erg}}{{\rm s} \cdot {\rm cm}^2 \cdot \AA} \right ]$'")
+        ax.set_title("%s. z = %s" % (self.name,self.parent.z))
+        ax.grid(True)
+        if fname is None:
+            fig.savefig("%s.png" % self.name, format="png")
+        else:
+            fig.savefig("%s.png" % fname, format="png")
+        
+class line(object):
+    def __init__(self,parent):
+        self.parent = parent
+        pass
+    
+def write_flm(fname,xs,ys,yerrs=None):
+    #f = open(fname,"w")
+    ar = np.array([xs,ys])
+    ar = ar.transpose()
+    print(ar[0])
+    if yerrs==None:
+        np.savetxt(fname,ar)
 
-
-def shift(line,z=0):
+def calculate_common_galaxy_lines(z=0.0):
+    '''Return the most common galaxy emission lines, given a redshift.'''
+    lines =[common_lines.single_lines[r'H$\alpha$'],
+    common_lines.single_lines[r'H$\beta$'],
+    common_lines.multiplets['[O II]'][1],
+    common_lines.multiplets['[O III]'][3]]
+    for i in lines:
+        print(i)
+        print(shift(i,z))
+            
+@np.vectorize
+def shift(line,z=0.0):
     '''Redshifts a line, given the rest wavelength and the redshift, z. All
     lines in angstroms.'''
     delta_lamb = line * z
     return line + delta_lamb
 
+@np.vectorize
+def un_shift(line,z=0.0):
+    '''Deredshifts a line to rest-frame'''
+    return line/(1.+z)
+
+def shift_vel(line, v):
+    '''Shift a line a certain velocity. Negative velocities refer to blueshift.'''
+    beta = (v*1e5)/c
+    return line * np.sqrt((1. + beta)/(1. - beta))
+    
 def gamma(v):
     '''Calculates relativistic `\gamma` based upon velocity (in km/s).
     ..math:
@@ -89,7 +249,8 @@ def gamma(v):
     #Hasn't been vetted yet
     return (1.0 - (v*1e5)**2/c**2)**(-0.5)
 
-def vel_ref(obs_line, ref_line, rel=False):
+@np.vectorize
+def vel_ref(obs_line, ref_line, rel=True):
     '''Given an observed line `\lambda` and a reference line `\lambda^\prime` (in Angstroms), calculate the velocity of
     the Doppler shift of the observed line, using the relativistic doppler formula. All lines in angstroms.
     Default output units are 'km/s'.
@@ -169,14 +330,28 @@ def find_peak(xs,ys,guess,spread=50.):
     max_y = interp_func(max_x)
     return [max_x,max_y]
 
-def annotate_line(label,wavelength,ax,xs,ys,offset=1e-16,length=16):
-    '''Annotate the spectral line in a plot, given the current axes'''
-    max_x,max_y = find_peak(xs,ys,wavelength)
-    print(max_x,max_y)
+def annotate_line(ax,key,altlabel=None,color="grey"):
+    line = common_lines.single_lines[key]
+    ax.axvline(line,ls="-.",lw=0.5,color=color)
+    if altlabel is None:
+        ax.annotate(key,(line,0.92), xycoords=("data","axes fraction"),rotation='vertical',verticalalignment='top',horizontalalignment="center",clip_on=True,color="k",size="x-small", bbox=dict(boxstyle="round,rounding_size=0.2,pad=0.2", fc="white", lw=0))
+    else:
+        ax.annotate(altlabel,(line,0.95), xycoords=("data","axes fraction"),rotation='vertical',verticalalignment='top',horizontalalignment="right",clip_on=True,color=color,size="small")
     
-    print(max_y + offset)
+def annotate_line_tag(ax,line,label,color="0.2",vert=0.92,yspan=[0.0,1.0]):
+    ymin,ymax = yspan
+    ax.axvline(line,ls="-.",lw=0.5,color=color,ymin=ymin,ymax=ymax)
+    ax.annotate(label,(line,vert), xycoords=("data","axes fraction"),rotation='vertical',verticalalignment='top',horizontalalignment="center",clip_on=True,color="k",size="x-small", bbox=dict(boxstyle="round,rounding_size=0.2,pad=0.2", fc="white", lw=0))
 
-    ax.annotate(label,(wavelength,max_y + offset),(0,length),textcoords="offset points",rotation="vertical",horizontalalignment="center",verticalalignment="bottom",arrowprops={"width":.1,"frac":1,"headwidth":.1},size=10).draggable()
+def annotate_multiplet_tag(ax,lines,label,color="grey",vert=0.97,yspan=[0.0,0.97]):
+    lines = np.array(lines)
+    ymin,ymax = yspan
+    for i in lines:
+        ax.axvline(i,ls=":",lw=0.4,color=color,ymin=ymin,ymax=ymax)
+    middle = (np.max(lines) + np.min(lines))/2
+    #somehowe stretch this to cover all lines
+    ax.annotate(label,(middle,vert), xycoords=("data","axes fraction"),rotation='horizontal',verticalalignment='top',horizontalalignment="center",clip_on=True,color="k",size="x-small", bbox=dict(boxstyle="round,rounding_size=0.2,pad=0.2", fc="white", lw=0.5))
+
 
 def annotate_multiplet(name,wavelength,ax,xs,ys,offset=5e-17,length=5e-17,label="Base"):
     lines =[]
@@ -244,13 +419,60 @@ def synthesize_photometric_point(filt, wl, fl):
     #This should be in spectral flux [erg/(s cm^2 A)]
     central = denom/simps(pxs, wl)
     #Returned product is in Jy  
-    return photometry.Flamb_to_Jy(flux,central) 
+    return photometry.Flamb_to_Jy(flux,central)
 
-def main():
-    global myspec,myspec2
-    myspec = Spectrum("spec.fits")
-    myspec2 = Spectrum("spec2.fits")
+
+def fit_gaussian(xs,ys,guess=[],x0_range=50.):
+    '''Fits a Guassian profile on top of a background'''
+    #import matplotlib.pyplot as plt
+    fit_func = lambda p: ys - functions.gaussian(xs,p[0:3])- p[3]
+    solution = leastsq(fit_func,guess)
+    if solution[1] not in [1,2,3,4]:
+        raise Error
+    else:
+        params = solution[0]
+    print(params)
+    return params
+
+def extinction_spline():
+    '''\frac{A(\lambda)}{E(B-V)}. Data generated from Fitzpatrick 1999 et. al, Table 3 Appendix'''
+    #lam = np.array([np.inf,26500.,12200.,6000.,5470.,4670.,4110.,2700.,2600.])
+    #Note that these points are for an R_V = 3.1 law.
+    wave_num = np.array([0.0,0.377,0.820,1.667,1.828,2.141,2.433,3.704,3.846])
+    a_eb = np.array([0.0,0.265,0.829,2.688,3.055,3.806,4.315,6.265,6.591])
+    ext = interp1d(wave_num,a_eb,kind="cubic")
+    #print(ext(wave_num))
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    wnums = np.linspace(0.0,3.846,num=200)
+    ax.plot(wnums, ext(wnums),"k")
+    ax.plot(wave_num, a_eb, "ko")
+    ax.set_xlabel(r"$\lambda^{-1}~(\mu {\rm m}^{-1})$")
+    ax.set_ylabel(r"$\frac{A(\lambda)}{E(B-V)}$")
+    fig.savefig("/home/ian/Grad/Research/SN2010U/Data/lc/plots/extinction_curve.eps")
+    #plt.show()
+   
     
+def main():
+    extinction_spline()
+    #global myspec,myspec2,xs,ys,params
+    #myspec = Spectrum("spec.fits")
+    #myspec2 = Spectrum("spec2.fits")
+    #indexs = np.where((myspec.wls[0] > 6300) & (myspec.wls[0] < 6800))
+    #xs = myspec.wls[0][indexs]
+    #ys = myspec.fls[0][indexs]
+    #params = myspec.fit_gaussian((6441.5, 3.45e-16),(6723.19, 3.25e-16), guess=[6e-16,6566.,30.])
+    #print(params)
+    #mb = params[3:5]
+    #fig = plt.figure()
+    #ax = fig.add_subplot(111)
+    #ax.plot(xs,ys)
+    #ax.plot(xs,functions.line(xs,mb),"g-")
+    #ax.plot(xs,functions.gaussian_bkg(xs,params))
+    #plt.show()
+    pass
+    
+        
 
 if __name__ == "__main__":
     main()

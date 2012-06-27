@@ -18,6 +18,7 @@ m_H = 1.6733e-24 #g
 
 #Planetary
 M_sun = 1.99e33 #g
+L_sun = 3.9e33 #ergs
 
 M_earth = 5.9736e27 #g
 R_earth = 6.378136e8 #cm
@@ -39,6 +40,8 @@ h_bar = 1.05457148e-17 #cm^2 g s^-1
 c = 2.99792458e10 #cm s^-1
 k = 1.3806504e-16 #erg K^-1
 G = 6.67259e-8 #cm3 g-1 s-2
+#Stefan-Boltzman Constant
+sigma_SB = 5.6704e-5 #erg cm^-2 s^-1 K^-4
 
 #Conversion factors
 pc = 3.0856776e18 #cm
